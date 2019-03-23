@@ -44,7 +44,7 @@
 // [2043] checksum  for information above
 
 // [2044,2045] total number of keys
-// [2046,2047] key number check (key number+1) 
+// [2046,2047] key number check (key number+1)
 
 #define MAX_KEYS                478 // max number of keys, total nr +1 = 479
 #define TAGSTRINGSIZE           5 // tag length
@@ -92,4 +92,3 @@ uint8_t get_my_id();
 bool fire_report(uint8_t event,uint32_t badge,uint32_t extrainfo);
 
 #endif
-

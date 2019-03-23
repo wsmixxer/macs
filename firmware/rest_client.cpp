@@ -65,15 +65,15 @@ void HttpClient::request(http_request_t &aRequest, http_response_t &aResponse, h
     if(aRequest.hostname!=NULL) {
         Serial1.print("HttpClient>\tConnecting to: ");
         Serial1.print(aRequest.hostname);
-            
+
         connected = client.connect(aRequest.hostname.c_str(), (aRequest.port) ? aRequest.port : 80 );
     }   else {
-        
+
         Serial1.print("HttpClient>\tConnecting to ip: ");
         Serial1.print(aRequest.ip);
         Serial1.print(" port ");
         Serial1.println(aRequest.port);
-            
+
         connected = client.connect(aRequest.ip, aRequest.port);
     }
 
@@ -278,4 +278,3 @@ void HttpClient::request(http_request_t &aRequest, http_response_t &aResponse, h
     aResponse.body += raw_response.substring(bodyPos+4);
     aResponse.status = atoi(statusCode.c_str());
 }
-

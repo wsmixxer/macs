@@ -8,10 +8,10 @@ LED::LED(uint8_t pin,uint16_t delay, uint8_t weak, uint8_t inverse){
     m_weak=weak;
     m_state=OFF;
     m_inverse=inverse;
-    
-    m_state=OFF; 
+
+    m_state=OFF;
     m_next_action=0;
-    
+
     clear();
 };
 
@@ -28,7 +28,7 @@ void LED::on_delayed(){
     Serial.print(m_pin);
     Serial.println(" on delayed");
     #endif
-    
+
     for(int i=MAX_MODE_HIST-1;i>0;i--){
         m_mode[i]=m_mode[i-1];
     }
@@ -55,7 +55,7 @@ void LED::on(){
     Serial.print(m_pin);
     Serial.println(" on");
     #endif
-    
+
     // mode saving
     for(int i=MAX_MODE_HIST-1;i>0;i--){
         m_mode[i]=m_mode[i-1];
@@ -93,17 +93,17 @@ void LED::off(){
     Serial.print(m_pin);
     Serial.println(" to off");
     #endif
-    
+
     // save the state
     for(int i=MAX_MODE_HIST-1;i>0;i--){
         m_mode[i]=m_mode[i-1];
     }
     m_mode[0]=OFF;
-    
+
     hw_off();
     m_next_action=0;
 }
-    
+
 void LED::hw_off(){
     // only call it if needed
     if(m_state!=OFF){
@@ -143,12 +143,12 @@ void LED::blink(){
     Serial.print(m_pin);
     Serial.println(" to blink");
     #endif
-    
+
     for(int i=MAX_MODE_HIST-1;i>0;i--){
         m_mode[i]=m_mode[i-1];
     }
     m_mode[0]=BLINK;
-    
+
 
     m_next_action=millis()-1;
     check();
@@ -159,20 +159,20 @@ void LED::resume(){
     Serial.print("resume led ");
     Serial.println(m_pin);
     #endif
-    
-    
+
+
     for(int i=0;i<MAX_MODE_HIST-1;i++){
         m_mode[i]=m_mode[i+1];
     }
     m_mode[MAX_MODE_HIST-1]=OFF;
-    
-    
+
+
     #ifdef DEBUG_JKW_LED
     Serial.print("to state ");
     Serial.println(m_mode[0]);
     #endif
-    
-    
+
+
     if(m_mode[0]==BLINK){
         m_next_action=millis()-1;
         check();
