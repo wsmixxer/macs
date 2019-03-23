@@ -6,7 +6,6 @@
 #include "log_backup.h"
 #include "stdint.h"
 #include "led.h"
-#include "wifi_login.h"
 #include "rest_client.h"
 
 #define UPDATECARD 1234567890

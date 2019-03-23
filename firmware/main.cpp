@@ -43,7 +43,7 @@ void set_connected(int status, bool force);
 uint8_t get_my_id();
 
 // network
-IPAddress HOSTNAME(192,168,188,23);
+IPAddress HOSTNAME(192,168,1,100);
 uint32_t v=20160214;
 
 uint8_t keys_available=0;
@@ -68,8 +68,6 @@ LED green_led(GREEN_LED_PIN,GREEN_LED_DELAY,0,0);
 
 BACKUP b; // report backup
 
-SYSTEM_MODE(MANUAL);// do not connect on your own
-
 // http server
 HttpClient http; // Headers currently need to be set at init, useful for API keys etc.
 http_header_t headers[] = {     { "Accept" , "*/*"},     { NULL, NULL } }; // NOTE: Always terminate headers will NULL
@@ -78,6 +76,7 @@ http_response_t response;
 
 //////////////////////////////// SETUP ////////////////////////////////
 void setup() {
+
     //FLASH_Lock();
     // set adress pins
     for(uint8_t i=10; i<=MAX_JUMPER_PIN+10; i++){   // A0..7 is 10..17, used to read my ID
@@ -85,19 +84,6 @@ void setup() {
     }
     pinMode(RELAY_PIN,OUTPUT);          // driver for the relay
     pinMode(TAG_IN_RANGE_INPUT,INPUT);
-
-    // register system handles
-    System.on(wifi_listen, listen);
-    //System.on(network_status, listen);
-
-    // antenna selection
-    pinMode(ANTENNA_PIN,INPUT_PULLUP);
-
-    if(digitalRead(ANTENNA_PIN)==LOW){ // high == no jumper to pull it down
-        WiFi.selectAntenna(ANT_EXTERNAL);
-    } else {
-        WiFi.selectAntenna(ANT_AUTO);
-    }
 
     // the db led is a weak and inverterted LED on the same pin as the update_input, this will set the pin to input_pullup anyway //
     pinMode(DB_LED_AND_UPDATE_PIN,INPUT_PULLUP);
@@ -137,7 +123,6 @@ void setup() {
 
 // Log message to cloud,
 void debug(String message) {
-    char msg [50];
     Spark.publish("DEBUG", message);
 }
 
@@ -157,8 +142,7 @@ void goto_update_mode(){
     while(1){
         // set_update_login will return true, if we've read a valid config from
         // the EEPROM memory AND that WIFI was in range AND the module has saved the login
-        if(set_update_login(&green_led,&red_led)){
-            Serial.println("set update login done");
+
             Particle.connect();
             uint8_t i=0;
 
@@ -188,9 +172,6 @@ void goto_update_mode(){
                             Particle.process();
                         }
 
-                        // check incomming data, unlikely here, because at this point we are already connected to an update wifi
-                        parse_wifi();
-
                         // keep blinking
                         red_led.check();
                         green_led.check();
@@ -216,7 +197,7 @@ void goto_update_mode(){
                 delay(200); // don't go to high as blink will look odd
             } // end while(WiFi.ready())
             // reaching this point tells us that we've set the wifi login, tried to connect but lost the connection, as the wifi is not (longer) ready
-        } // if(set_update_login())
+
     } // end while(1)
     // ############ UPDATE MODUS ############ //
 }
@@ -225,6 +206,7 @@ void goto_update_mode(){
 //////////////////////////////// MAIN LOOP ////////////////////////////////
 // woop woop main loop
 void loop() {
+
     // check if we found a tag
     if(tag_found(currentTagBuf,&currentTag)){
         if(currentTag == UPDATECARD){
@@ -315,7 +297,6 @@ void loop() {
     db_led.check();
     red_led.check();
     green_led.check();
-    parse_wifi();
 }
 //////////////////////////////// MAIN LOOP ////////////////////////////////
 
@@ -522,18 +503,6 @@ bool update_ids(bool forced){
         return false;
     }
 
-    if(!is_wifi_connected()){
-
-        #ifdef DEBUG_JKW_MAIN
-        Serial1.println("no ping");
-        #endif
-
-        if(!set_macs_login(&green_led,&red_led)){
-            set_connected(0,true);
-            return false;
-        }
-    }
-
     last_key_update=millis()/1000;
     db_led.on(); // turn the led on
 
@@ -692,20 +661,6 @@ void create_report(uint8_t event,uint32_t badge,uint32_t extrainfo){
 
 bool fire_report(uint8_t event,uint32_t badge,uint32_t extrainfo){
     bool ret=true;
-
-    if(!is_wifi_connected()){
-
-        #ifdef DEBUG_JKW_MAIN
-        Serial1.println("no ping");
-        #endif
-
-        if(set_macs_login(&green_led,&red_led)){
-            set_connected(1); // this could potentially destroy our LED pattern? TODO
-        } else {
-            set_connected(0);
-            return false; // pointless to go on
-        }
-    }
 
     db_led.on(); // turn the led on
     if(event==LOG_RELAY_CONNECTED){
