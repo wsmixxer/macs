@@ -28,6 +28,20 @@
 #include "config.h"
 #include "application.h"
 
+void console_debug(String message);
+void goto_update_mode();
+bool access_test(uint32_t tag);
+uint32_t relay(int8_t input);
+bool tag_found(uint8_t *buf,uint32_t *tag);
+bool validate_tag(uint8_t *buf,uint32_t *tag);
+bool read_EEPROM();
+bool update_ids(bool forced);
+void create_report(uint8_t event,uint32_t badge,uint32_t extrainfo);
+bool fire_report(uint8_t event,uint32_t badge,uint32_t extrainfo);
+void set_connected(int status);
+void set_connected(int status, bool force);
+uint8_t get_my_id();
+
 // network
 IPAddress HOSTNAME(192,168,188,23);
 uint32_t v=20160214;
@@ -62,10 +76,9 @@ http_header_t headers[] = {     { "Accept" , "*/*"},     { NULL, NULL } }; // NO
 http_request_t request;
 http_response_t response;
 
-
 //////////////////////////////// SETUP ////////////////////////////////
 void setup() {
-    FLASH_Lock();
+    //FLASH_Lock();
     // set adress pins
     for(uint8_t i=10; i<=MAX_JUMPER_PIN+10; i++){   // A0..7 is 10..17, used to read my ID
        pinMode(i,INPUT_PULLUP);
@@ -121,6 +134,12 @@ void setup() {
     }
 }
 //////////////////////////////// SETUP ////////////////////////////////
+
+// Log message to cloud,
+void debug(String message) {
+    char msg [50];
+    Spark.publish("DEBUG", message);
+}
 
  // ############ UPDATE MODUS ############ //
 void goto_update_mode(){
@@ -605,7 +624,7 @@ bool update_ids(bool forced){
         keys[i]=0;
     }
 
-    FLASH_Unlock();
+    //FLASH_Unlock();
     for(uint16_t i=0;i<response.body.length();i++){
         Serial.print(response.body.charAt(i));
 
@@ -614,10 +633,10 @@ bool update_ids(bool forced){
                 Serial1.print("write:");
                 Serial1.println(current_key*4+3);
                 // store to EEPROM
-                EEPROM.update(current_key*4+0, (keys[current_key]>>24)&0xff);
-                EEPROM.update(current_key*4+1, (keys[current_key]>>16)&0xff);
-                EEPROM.update(current_key*4+2, (keys[current_key]>>8)&0xff);
-                EEPROM.update(current_key*4+3, (keys[current_key])&0xff);
+                EEPROM.write(current_key*4+0, (keys[current_key]>>24)&0xff);
+                EEPROM.write(current_key*4+1, (keys[current_key]>>16)&0xff);
+                EEPROM.write(current_key*4+2, (keys[current_key]>>8)&0xff);
+                EEPROM.write(current_key*4+3, (keys[current_key])&0xff);
 
                 current_key++;
             }
@@ -632,14 +651,14 @@ bool update_ids(bool forced){
     Serial1.print("write:");
     Serial1.println(KEY_NUM_EEPROM_LOW);
 
-    EEPROM.update(KEY_NUM_EEPROM_HIGH,(keys_available>>8)&0xff);
+    EEPROM.write(KEY_NUM_EEPROM_HIGH,(keys_available>>8)&0xff);
     EEPROM.update(KEY_NUM_EEPROM_LOW,(keys_available)&0xff);
     // checksum
     Serial1.print("write:");
     Serial1.println(KEY_CHECK_EEPROM_LOW);
-    EEPROM.update(KEY_CHECK_EEPROM_HIGH,((keys_available+1)>>8)&0xff);
-    EEPROM.update(KEY_CHECK_EEPROM_LOW,((keys_available+1))&0xff);
-    FLASH_Lock();
+    EEPROM.write(KEY_CHECK_EEPROM_HIGH,((keys_available+1)>>8)&0xff);
+    EEPROM.write(KEY_CHECK_EEPROM_LOW,((keys_available+1))&0xff);
+    //FLASH_Lock();
 
     #ifdef DEBUG_JKW_MAIN
     Serial1.print("Total received keys for my id(");

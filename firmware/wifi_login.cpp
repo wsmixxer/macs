@@ -482,25 +482,25 @@ bool save_wifi_config(uint8_t id,String SSID,String pw,uint8_t type,uint8_t chk)
 
     //save the data
     // ssid
-    FLASH_Unlock();
+    //FLASH_Unlock();
     for(uint8_t i=0;i<SSID.length() && i<20;i++){
-        EEPROM.update(data_start+i+0,SSID.charAt(i));
+        EEPROM.write(data_start+i+0,SSID.charAt(i));
     }
     if(SSID.length()<20){
-        EEPROM.update(data_start+SSID.length()+0,0x00);
+        EEPROM.write(data_start+SSID.length()+0,0x00);
     }
     // pw
     for(uint8_t i=0;i<pw.length() && i<20;i++){
-        EEPROM.update(data_start+i+20,pw.charAt(i));
+        EEPROM.write(data_start+i+20,pw.charAt(i));
     }
     if(pw.length()<20){
-        EEPROM.update(data_start+pw.length()+20,0x00);
+        EEPROM.write(data_start+pw.length()+20,0x00);
     }
     // type
-    EEPROM.update(data_start+40,type);
+    EEPROM.write(data_start+40,type);
     // checksum
-    EEPROM.update(data_start+41,chk);
-    FLASH_Lock();
+    EEPROM.write(data_start+41,chk);
+    //FLASH_Lock();
 
     Serial1.println("done!!");
     return true;
