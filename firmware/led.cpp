@@ -24,9 +24,9 @@ void LED::clear(){
 
 void LED::on_delayed(){
     #ifdef DEBUG_JKW_LED
-    Serial.print("Swtich led ");
-    Serial.print(m_pin);
-    Serial.println(" on delayed");
+    Serial1.print("Swtich led ");
+    Serial1.print(m_pin);
+    Serial1.println(" on delayed");
     #endif
 
     for(int i=MAX_MODE_HIST-1;i>0;i--){
@@ -51,9 +51,9 @@ void LED::toggle(){
 // standard "on()" should save the old mode of the LED, so call with with remember
 void LED::on(){
     #ifdef DEBUG_JKW_LED
-    Serial.print("Swtich led ");
-    Serial.print(m_pin);
-    Serial.println(" on");
+    Serial1.print("Swtich led ");
+    Serial1.print(m_pin);
+    Serial1.println(" on");
     #endif
 
     // mode saving
@@ -89,9 +89,9 @@ void LED::hw_on(){
 
 void LED::off(){
     #ifdef DEBUG_JKW_LED
-    Serial.print("Swtich led ");
-    Serial.print(m_pin);
-    Serial.println(" to off");
+    Serial1.print("Swtich led ");
+    Serial1.print(m_pin);
+    Serial1.println(" to off");
     #endif
 
     // save the state
@@ -139,9 +139,9 @@ void LED::check(){
 
 void LED::blink(){
     #ifdef DEBUG_JKW_LED
-    Serial.print("Swtich led ");
-    Serial.print(m_pin);
-    Serial.println(" to blink");
+    Serial1.print("Swtich led ");
+    Serial1.print(m_pin);
+    Serial1.println(" to blink");
     #endif
 
     for(int i=MAX_MODE_HIST-1;i>0;i--){
@@ -156,8 +156,8 @@ void LED::blink(){
 
 void LED::resume(){
     #ifdef DEBUG_JKW_LED
-    Serial.print("resume led ");
-    Serial.println(m_pin);
+    Serial1.print("resume led ");
+    Serial1.println(m_pin);
     #endif
 
 
@@ -168,8 +168,8 @@ void LED::resume(){
 
 
     #ifdef DEBUG_JKW_LED
-    Serial.print("to state ");
-    Serial.println(m_mode[0]);
+    Serial1.print("to state ");
+    Serial1.println(m_mode[0]);
     #endif
 
 

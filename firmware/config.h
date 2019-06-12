@@ -83,6 +83,7 @@
 #define GREEN_LED_DELAY         1000 // ms
 #define DB_LED_DELAY            1000 // ms
 #define SEC_WAIT_BOOTUP         5 // 5sec of led toggling to show that we are starting
+#define DEBUG_LOOP_DELAY      1000
 
 // network
 #define HOSTPORT 80
