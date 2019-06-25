@@ -26,6 +26,8 @@
 #include "application.h"
 #include "stdint.h"
 #include "config.h"
+#include "Wire.h"
+#include "LiquidCrystal_I2C.h"
 #include "Button.h"
 #include "RDM6300_particle.h"
 
@@ -77,6 +79,7 @@ http_request_t request;
 http_response_t response;
 
 Rdm6300 rdm6300;
+LiquidCrystal_I2C lcd(0x3F,20,4);  // 0x3F is the default I2C bus address
 Button micro_switch(MICROSWITCH_PIN);
 
 //////////////////////////////// SETUP ////////////////////////////////
@@ -106,6 +109,8 @@ void setup() {
 
     rdm6300.init(); // RDM6300 is connected to  rx/tx pins, making use of Serial1
     micro_switch.init();
+    lcd.init();
+    lcd.backlight();
 
     // setup https client
     request.ip = HOSTNAME;
@@ -235,6 +240,9 @@ void loop() {
     if(tag_fully_inserted() && !current_tag_used) {
 
         current_tag_used = true;
+
+        lcd.setCursor(0,0);
+        lcd.print(String(current_tag_id));
 
         if(current_tag_id == UPDATECARD){
             goto_update_mode();
