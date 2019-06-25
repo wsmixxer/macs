@@ -19,10 +19,10 @@ class LED {
         uint8_t m_weak=0;
         uint8_t m_state=0;
         uint8_t m_inverse=0;
-        
+
         uint8_t  m_mode[MAX_MODE_HIST];
-        
-    
+
+
     public:
         LED(uint8_t pin,uint16_t delay, uint8_t pullup,uint8_t inverse);
         void check();

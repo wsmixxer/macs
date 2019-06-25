@@ -6,7 +6,6 @@
 #include "log_backup.h"
 #include "stdint.h"
 #include "led.h"
-#include "wifi_login.h"
 #include "rest_client.h"
 
 #define UPDATECARD 1234567890
@@ -44,7 +43,7 @@
 // [2043] checksum  for information above
 
 // [2044,2045] total number of keys
-// [2046,2047] key number check (key number+1) 
+// [2046,2047] key number check (key number+1)
 
 #define MAX_KEYS                478 // max number of keys, total nr +1 = 479
 #define TAGSTRINGSIZE           5 // tag length
@@ -84,6 +83,7 @@
 #define GREEN_LED_DELAY         1000 // ms
 #define DB_LED_DELAY            1000 // ms
 #define SEC_WAIT_BOOTUP         5 // 5sec of led toggling to show that we are starting
+#define DEBUG_LOOP_DELAY      1000
 
 // network
 #define HOSTPORT 80
@@ -92,4 +92,3 @@ uint8_t get_my_id();
 bool fire_report(uint8_t event,uint32_t badge,uint32_t extrainfo);
 
 #endif
-

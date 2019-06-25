@@ -9,7 +9,7 @@ class BACKUP
         uint32_t    m_badge[BACKUP_MAX];
         uint32_t    m_extrainfo[BACKUP_MAX];
         uint8_t     m_position;
-    
+
     public:
         BACKUP();
         uint8_t add(uint8_t event,uint32_t badge,uint32_t extrainfo);
