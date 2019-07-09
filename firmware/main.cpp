@@ -55,6 +55,7 @@ uint32_t keys[MAX_KEYS];
 uint8_t connected=0;
 uint32_t current_tag_id=0;
 bool current_tag_used = false;
+bool current_tag_removed = true;
 
 uint8_t current_relay_state=RELAY_DISCONNECTED;
 uint8_t id=-1; //255, my own id
@@ -65,6 +66,7 @@ uint32_t relay_open_timestamp=0;
 uint32_t last_tag_read=0;
 static unsigned long lastGeneralDebugRefreshTime = 0;
 static unsigned long lastRFIDDebugRefreshTime = 0;
+bool initialized = false;
 
 LED db_led(DB_LED_AND_UPDATE_PIN,DB_LED_DELAY,1,1); // weak + inverse
 LED red_led(RED_LED_PIN,RED_LED_DELAY,0,0);
@@ -79,8 +81,15 @@ http_request_t request;
 http_response_t response;
 
 Rdm6300 rdm6300;
-LiquidCrystal_I2C lcd(0x3F,20,4);  // 0x3F is the default I2C bus address
+LiquidCrystal_I2C lcd(0x27,20,4); // Grab and run third party i2c scanning code if this bus address doesn't work for you
 Button micro_switch(MICROSWITCH_PIN);
+
+byte logo_r0_c0[] = {0x1E, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
+byte logo_r0_c1[] = {0x00, 0x00, 0x00, 0x11, 0x19, 0x1D, 0x1F, 0x1D};
+byte logo_r0_c2[] = {0x0E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E};
+byte logo_r1_c0[] = {0x07, 0x13, 0x19, 0x1C, 0x1E, 0x1F, 0x1F, 0x00};
+byte logo_r1_c1[] = {0x11, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00};
+byte logo_r1_c2[] = {0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x00};
 
 //////////////////////////////// SETUP ////////////////////////////////
 void setup() {
@@ -110,7 +119,34 @@ void setup() {
     rdm6300.init(); // RDM6300 is connected to  rx/tx pins, making use of Serial1
     micro_switch.init();
     lcd.init();
+
+    lcd.createChar(0, logo_r0_c0);
+    lcd.createChar(1, logo_r0_c1);
+    lcd.createChar(2, logo_r0_c2);
+    lcd.createChar(3, logo_r1_c0);
+    lcd.createChar(4, logo_r1_c1);
+    lcd.createChar(5, logo_r1_c2);
+
     lcd.backlight();
+    lcd.setCursor(0,0);
+    lcd.write(0);
+    lcd.setCursor(1,0);
+    lcd.write(1);
+    lcd.setCursor(2,0);
+    lcd.write(2);
+    lcd.setCursor(0,1);
+    lcd.write(3);
+    lcd.setCursor(1,1);
+    lcd.write(4);
+    lcd.setCursor(2,1);
+    lcd.write(5);
+
+    lcd.setCursor(3,0);
+    lcd.print("Initializing     ");
+    lcd.setCursor(3,1);
+    lcd.print("_________________");
+    lcd.setCursor(15,0);
+    lcd.blink();
 
     // setup https client
     request.ip = HOSTNAME;
@@ -230,9 +266,26 @@ void goto_update_mode(){
 // woop woop main loop
 void loop() {
 
+    if (!initialized) {
+        lcd.setCursor(3,0);
+        lcd.print("Insert ID Card   ");
+        lcd.setCursor(17,0);
+        initialized = true;
+    }
+
     // Check if we found a tag
     if (rdm6300.update()) {
         current_tag_id = rdm6300.get_tag_id();
+        lcd.setCursor(3,0);
+        lcd.print("                 ");
+        lcd.setCursor(3,0);
+        lcd.blink();
+        if (!tag_fully_inserted()) {
+            lcd.setCursor(3,2);
+            lcd.print("Please fully     ");
+            lcd.setCursor(3,3);
+            lcd.print("insert ID card   ");
+        }
         Serial.println("Found tag " + String(current_tag_id));
         current_tag_used = false;
     }
@@ -240,9 +293,11 @@ void loop() {
     if(tag_fully_inserted() && !current_tag_used) {
 
         current_tag_used = true;
+        current_tag_removed = false;
 
-        lcd.setCursor(0,0);
-        lcd.print(String(current_tag_id));
+        lcd.noBlink();
+        lcd.setCursor(3,0);
+        lcd.print("Card recognized  ");
 
         if(current_tag_id == UPDATECARD){
             goto_update_mode();
@@ -256,6 +311,12 @@ void loop() {
             if(access_test(current_tag_id)){
                 relay(RELAY_CONNECTED);
                 tries=0;
+                lcd.noBlink();
+                lcd.setCursor(3,2);
+                lcd.print("Access granted   ");
+                lcd.setCursor(3,3);
+                lcd.print("to this machine  ");
+
                 // takes long
                 create_report(LOG_RELAY_CONNECTED,current_tag_id,0);
                 // 1. assuming that we are NOT connected, we reached this point and the create_report has success to reconnet than it will call set_connected()
@@ -272,6 +333,13 @@ void loop() {
                 // if we have a card that is not known to be valid we should maybe check our database
                 if(tries>1){
 
+                    lcd.setCursor(3,2);
+                    lcd.print("Access pending   ");
+                    lcd.setCursor(3,3);
+                    lcd.print("Refreshing IDs   ");
+                    lcd.setCursor(17,3);
+                    lcd.blink();
+
                     #ifdef DEBUG_JKW_MAIN
                     Serial.println("Key not valid, requesting update from server");
                     #endif
@@ -287,6 +355,12 @@ void loop() {
 
                     tries-=1;
                 } else {
+
+                    lcd.noBlink();
+                    lcd.setCursor(3,2);
+                    lcd.print("Access denied    ");
+                    lcd.setCursor(3,3);
+                    lcd.print("ID not authorized");
 
                     #ifdef DEBUG_JKW_MAIN
                     Serial.println("key still not valid. :P");
@@ -305,6 +379,20 @@ void loop() {
     // if serial1 has avaioable chars, it means that TAG IN RANGE had to be low at some point, its just a new card there now!
     //if((digitalRead(TAG_IN_RANGE_INPUT)==0 || Serial1.available()) && current_tag_id!=-1){
     if(!tag_fully_inserted()) {
+
+        // Performed only once when  card is first removed
+        if(!current_tag_removed) {
+            current_tag_removed = true;
+            lcd.setCursor(3,0);
+            lcd.print("Insert ID card   ");
+            lcd.setCursor(0,2);
+            lcd.print("                    ");
+            lcd.setCursor(0,3);
+            lcd.print("                    ");
+            lcd.setCursor(17,0);
+            lcd.blink();
+        }
+
         // open the relay as soon as the tag is gone
         if(current_relay_state==RELAY_CONNECTED){
             uint32_t open_time_sec=relay(RELAY_DISCONNECTED);
