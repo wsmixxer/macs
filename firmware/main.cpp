@@ -30,6 +30,8 @@
 #include "LiquidCrystal_I2C.h"
 #include "Button.h"
 #include "RDM6300_particle.h"
+#include "WS2812FX.h"
+#include "neopixel.h"
 
 void console_debug(String message);
 void goto_update_mode();
@@ -84,6 +86,9 @@ Rdm6300 rdm6300;
 LiquidCrystal_I2C lcd(0x27,20,4); // Grab and run third party i2c scanning code if this bus address doesn't work for you
 Button micro_switch(MICROSWITCH_PIN);
 
+//Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
+WS2812FX ws2812fx = WS2812FX(LED_COUNT, LED_PIN, PIXEL_TYPE);
+
 byte logo_r0_c0[] = {0x1E, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
 byte logo_r0_c1[] = {0x00, 0x00, 0x00, 0x11, 0x19, 0x1D, 0x1F, 0x1D};
 byte logo_r0_c2[] = {0x0E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E, 0x1E};
@@ -119,6 +124,11 @@ void setup() {
     rdm6300.init(); // RDM6300 is connected to  rx/tx pins, making use of Serial1
     micro_switch.init();
     lcd.init();
+    ws2812fx.init();
+    ws2812fx.setBrightness(255);
+    ws2812fx.setColor(BLUE);
+    ws2812fx.setMode(FX_MODE_STATIC);
+    ws2812fx.start();
 
     lcd.createChar(0, logo_r0_c0);
     lcd.createChar(1, logo_r0_c1);
@@ -266,6 +276,8 @@ void goto_update_mode(){
 // woop woop main loop
 void loop() {
 
+    ws2812fx.service();
+
     if (!initialized) {
         lcd.setCursor(3,0);
         lcd.print("Insert ID Card   ");
@@ -285,12 +297,14 @@ void loop() {
             lcd.print("Please fully     ");
             lcd.setCursor(3,3);
             lcd.print("insert ID card   ");
+            ws2812fx.setColor(GREEN);
+            ws2812fx.setMode(FX_MODE_BLINK);
         }
         Serial.println("Found tag " + String(current_tag_id));
         current_tag_used = false;
     }
 
-    if(tag_fully_inserted() && !current_tag_used) {
+    if(tag_fully_inserted() && !current_tag_used && current_tag_id > 0) {
 
         current_tag_used = true;
         current_tag_removed = false;
@@ -311,11 +325,15 @@ void loop() {
             if(access_test(current_tag_id)){
                 relay(RELAY_CONNECTED);
                 tries=0;
+
                 lcd.noBlink();
                 lcd.setCursor(3,2);
                 lcd.print("Access granted   ");
                 lcd.setCursor(3,3);
                 lcd.print("to this machine  ");
+
+                ws2812fx.setColor(GREEN);
+                ws2812fx.setMode(FX_MODE_BREATH);
 
                 // takes long
                 create_report(LOG_RELAY_CONNECTED,current_tag_id,0);
@@ -328,7 +346,7 @@ void loop() {
                 // 4. assuming that we are connected, we reached this point then create_report will not try to reconnect, but the report failed, create_report will set us to not conneted
                 // the red will be blinkin (ok), we want to show that this card was good, turn green on
                 set_connected(connected,1); // force to resume LED pattern
-                green_led.on();
+
             } else {
                 // if we have a card that is not known to be valid we should maybe check our database
                 if(tries>1){
@@ -340,12 +358,14 @@ void loop() {
                     lcd.setCursor(17,3);
                     lcd.blink();
 
+                    ws2812fx.setColor(ORANGE);
+                    ws2812fx.setMode(FX_MODE_BLINK);
+
                     #ifdef DEBUG_JKW_MAIN
                     Serial.println("Key not valid, requesting update from server");
                     #endif
 
                     update_ids(false); // unforced update
-
 
                     #ifdef DEBUG_JKW_MAIN
                     if(tries>0){
@@ -362,6 +382,9 @@ void loop() {
                     lcd.setCursor(3,3);
                     lcd.print("ID not authorized");
 
+                    ws2812fx.setColor(RED);
+                    ws2812fx.setMode(FX_MODE_STATIC);
+
                     #ifdef DEBUG_JKW_MAIN
                     Serial.println("key still not valid. :P");
                     #endif
@@ -369,7 +392,6 @@ void loop() {
                     tries=0;
                     // takes long
                     create_report(LOG_LOGIN_REJECTED,current_tag_id,0);
-                    red_led.on();
                 }
             }
         }
@@ -379,6 +401,14 @@ void loop() {
     // if serial1 has avaioable chars, it means that TAG IN RANGE had to be low at some point, its just a new card there now!
     //if((digitalRead(TAG_IN_RANGE_INPUT)==0 || Serial1.available()) && current_tag_id!=-1){
     if(!tag_fully_inserted()) {
+
+        // open the relay as soon as the tag is gone
+        if(current_relay_state==RELAY_CONNECTED){
+            uint32_t open_time_sec=relay(RELAY_DISCONNECTED);
+            green_led.resume();
+            // last because it takes long
+            create_report(LOG_RELAY_DISCONNECTED,current_tag_id,open_time_sec);
+        }
 
         // Performed only once when  card is first removed
         if(!current_tag_removed) {
@@ -391,14 +421,8 @@ void loop() {
             lcd.print("                    ");
             lcd.setCursor(17,0);
             lcd.blink();
-        }
-
-        // open the relay as soon as the tag is gone
-        if(current_relay_state==RELAY_CONNECTED){
-            uint32_t open_time_sec=relay(RELAY_DISCONNECTED);
-            green_led.resume();
-            // last because it takes long
-            create_report(LOG_RELAY_DISCONNECTED,current_tag_id,open_time_sec);
+            ws2812fx.setColor(BLUE);
+            ws2812fx.setMode(FX_MODE_BREATH);
         }
 
         set_connected(connected,1); // force to resume LED pattern
