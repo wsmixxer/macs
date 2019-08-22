@@ -13,12 +13,12 @@
 #define MAX_JUMPER_PIN 6 // 2^(6+1)-1=127
 
 #define DB_LED_AND_UPDATE_PIN   D0
-#define TAG_IN_RANGE_INPUT      D1
 #define ANTENNA_PIN             D2
 #define RELAY_PIN               D3
 #define RED_LED_PIN             D4
-#define READ_BACK_PIN           D5
+#define LED_PIN                 D5
 #define GREEN_LED_PIN           D6
+#define MICROSWITCH_PIN         A7
 
 // storage design:  valid adresses are 0-2047
 // [0..3] key 1
@@ -83,7 +83,9 @@
 #define GREEN_LED_DELAY         1000 // ms
 #define DB_LED_DELAY            1000 // ms
 #define SEC_WAIT_BOOTUP         5 // 5sec of led toggling to show that we are starting
-#define DEBUG_LOOP_DELAY      1000
+#define DEBUG_LOOP_DELAY        1000
+#define LED_COUNT               1
+#define PIXEL_TYPE              WS2811
 
 // network
 #define HOSTPORT 80
